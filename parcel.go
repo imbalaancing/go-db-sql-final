@@ -38,7 +38,7 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 
 	if err != nil {
-		return p, fmt.Errorf("Не удалось произвести чтение строки по заданному номеру %d: %w", number, err)
+		return Parcel{}, fmt.Errorf("Не удалось произвести чтение строки по заданному номеру %d: %w", number, err)
 	}
 	return p, nil
 }
@@ -56,11 +56,15 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	for rows.Next() {
 		p := Parcel{}
 
-		err := rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
+		err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 		if err != nil {
 			return res, fmt.Errorf("Не удалось произвести чтение строки по заданному клиенту %d: %w", client, err)
 		}
 		res = append(res, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return res, nil
@@ -82,18 +86,12 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 		sql.Named("number", number),
 		sql.Named("address", address),
 		sql.Named("status", ParcelStatusRegistered))
-	if err != nil {
-		return fmt.Errorf("Не удалось изменить адрес посылки %d: %w", number, err)
-	}
-	return nil
+	return err
 }
 
 func (s ParcelStore) Delete(number int) error {
 	_, err := s.db.Exec("DELETE FROM parcel WHERE number = :number AND status = :status",
 		sql.Named("number", number),
 		sql.Named("status", ParcelStatusRegistered))
-	if err != nil {
-		return fmt.Errorf("Не удалось удалить посылку с номером %d: %w", number, err)
-	}
-	return nil
+	return err
 }
